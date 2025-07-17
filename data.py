@@ -42,7 +42,7 @@ while True:
         else:
             k = imgSize/w
             hCal = math.ceil(k*h)
-            imgResize = cv2.resize(imgCrop,(wCal,imgSize))
+            imgResize = cv2.resize(imgCrop,(hCal,imgSize))
             imgResizeShape = imgResize.shape
             hGap = math.ceil((imgSize-hCal)/2)
             imgWhite[hGap:hGap+hCal, :]=imgResize
