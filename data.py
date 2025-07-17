@@ -1,6 +1,7 @@
 import cv2
 from cvzone.HandTrackingModule import HandDetector
 import numpy as np
+import math
 # Set up webcam
 cap = cv2.VideoCapture(0)
 
@@ -27,8 +28,26 @@ while True:
         imgCrop=img[y-offset:y+h+offset,x-offset:x+w+offset]
         
         imgCropShape = imgCrop.shape
-        imgWhite[0:imgCropShape[0],0:imgCropShape[1]]=imgCrop
-        # imgCrop.resize(imgWhite)
+        #Aspect ratio for the size
+        aspect_ratio = h/w
+        #conditions to resize the image 
+        if aspect_ratio > 1:
+            k = imgSize/h
+            wCal = math.ceil(k*w)
+            imgResize = cv2.resize(imgCrop,(wCal,imgSize))
+            imgResizeShape = imgResize.shape
+            wGap = math.ceil((imgSize-wCal)/2)
+            imgWhite[:, wGap:wGap+wCal]=imgResize
+            
+        else:
+            k = imgSize/w
+            hCal = math.ceil(k*h)
+            imgResize = cv2.resize(imgCrop,(wCal,imgSize))
+            imgResizeShape = imgResize.shape
+            hGap = math.ceil((imgSize-hCal)/2)
+            imgWhite[hGap:hGap+hCal, :]=imgResize
+        
+        
         cv2.imshow("ImageCrop", imgCrop)
         cv2.imshow("ImageWhite", imgWhite)
 
