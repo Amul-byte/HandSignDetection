@@ -2,6 +2,9 @@ import cv2
 from cvzone.HandTrackingModule import HandDetector
 import numpy as np
 import math
+import time
+import os
+
 # Set up webcam
 cap = cv2.VideoCapture(0)
 
@@ -9,6 +12,10 @@ cap = cv2.VideoCapture(0)
 detector = HandDetector(maxHands=1)
 imgSize=400
 offset=30
+counter = 0
+folder = "Data/A"
+os.makedirs(folder, exist_ok=True)
+
 
 while True:
     success, img = cap.read()
@@ -42,7 +49,7 @@ while True:
         else:
             k = imgSize/w
             hCal = math.ceil(k*h)
-            imgResize = cv2.resize(imgCrop,(hCal,imgSize))
+            imgResize = cv2.resize(imgCrop,(imgSize,hCal))
             imgResizeShape = imgResize.shape
             hGap = math.ceil((imgSize-hCal)/2)
             imgWhite[hGap:hGap+hCal, :]=imgResize
@@ -55,9 +62,18 @@ while True:
     cv2.imshow("Image", img)
 
     # Exit when 'q' is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    # if cv2.waitKey(1) & 0xFF == ord('q'):
+    #     break
 
+    key = cv2.waitKey(1)
+    if key == ord('s'):
+        counter +=1
+        cv2.imwrite(f"{folder}/Image_{int(time.time())}.jpg", imgWhite)
+        print(counter)
+        
+    if key == ord('q'):
+        break
+    
 # Release the camera and destroy the window
 cap.release()
 cv2.destroyAllWindows()
