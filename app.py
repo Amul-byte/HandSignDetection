@@ -11,7 +11,7 @@ st.title("✋ Real-time Hand Sign Detection")
 
 
 # Initialize components
-classifier = Classifier("Model/keras_model.h5", "Model/labels.txt")
+classifier = Classifier("model/keras_model.h5", "model/labels.txt")
 detector = HandDetector(maxHands=1)
 labels = ["A", "C"]
 imgSize = 400
