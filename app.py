@@ -9,6 +9,7 @@ import time
 # App title
 st.title("✋ Real-time Hand Sign Detection")
 
+
 # Initialize components
 classifier = Classifier("Model/keras_model.h5", "Model/labels.txt")
 detector = HandDetector(maxHands=1)
@@ -16,8 +17,12 @@ labels = ["A", "C"]
 imgSize = 400
 offset = 30
 FRAME_WINDOW = st.image([])
-run = st.checkbox("Start Webcam")
 
+with st.sidebar:
+    st.header("Settings")
+    st.write("Adjust the settings below to customize the hand sign detection.")
+    run = st.checkbox("Start Webcam")
+    
 # Start video capture
 cap = cv2.VideoCapture(0)
 
