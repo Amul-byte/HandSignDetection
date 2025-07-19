@@ -1,19 +1,21 @@
 import cv2
 from cvzone.HandTrackingModule import HandDetector
+from cvzone.ClassificationModule import Classifier
 import numpy as np
 import math
 import time
 import os
-
+import tensorflow as tf
 # Set up webcam
 cap = cv2.VideoCapture(0)
-
+classifier = Classifier("Model/keras_model.h5", "Model/labels.txt")
 # Initialize hand detector
 detector = HandDetector(maxHands=1)
 imgSize=400
 offset=30
 counter = 0
-folder = "Data/A"
+labels= ["A","C"]
+folder = "Data/C"
 os.makedirs(folder, exist_ok=True)
 
 
@@ -23,6 +25,7 @@ while True:
         break  # Stop if the camera fails
 
     # Detect hands
+    imgOutput = img.copy()
     hands, img = detector.findHands(img)
     #Crop image
     if hands:
@@ -45,6 +48,8 @@ while True:
             imgResizeShape = imgResize.shape
             wGap = math.ceil((imgSize-wCal)/2)
             imgWhite[:, wGap:wGap+wCal]=imgResize
+            prediction,index = classifier.getPrediction(imgWhite)
+            print(prediction, index)
             
         else:
             k = imgSize/w
@@ -53,13 +58,15 @@ while True:
             imgResizeShape = imgResize.shape
             hGap = math.ceil((imgSize-hCal)/2)
             imgWhite[hGap:hGap+hCal, :]=imgResize
+            prediction,index = classifier.getPrediction(imgWhite)
         
-        
+        cv2.putText(imgOutput, labels[index], (x, y - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+        cv2.rectangle(imgOutput, (x-offset, y-offset), (x+w+offset, y+h+offset), (0, 255, 0), 2)
         cv2.imshow("ImageCrop", imgCrop)
         cv2.imshow("ImageWhite", imgWhite)
 
     # Display the image
-    cv2.imshow("Image", img)
+    cv2.imshow("Image", imgOutput)
 
     # Exit when 'q' is pressed
     # if cv2.waitKey(1) & 0xFF == ord('q'):
