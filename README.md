@@ -14,11 +14,12 @@ OpenCV, cvzone, and MediaPipe.
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.11
 - opencv-python
 - cvzone
 - mediapipe
 - numpy
+- streamlit
 
 ## Setup
 
