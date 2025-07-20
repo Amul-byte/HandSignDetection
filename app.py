@@ -1,71 +1,71 @@
 import streamlit as st
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import cv2
-from cvzone.HandTrackingModule import HandDetector
-from cvzone.ClassificationModule import Classifier
 import numpy as np
 import math
-import time
+from cvzone.HandTrackingModule import HandDetector
+from cvzone.ClassificationModule import Classifier
 
-# App title
-st.title("✋ Real-time Hand Sign Detection")
+st.title("✋ Real-time Hand Sign Detection (WebRTC)")
 
-
-# Initialize components
+# Load model and set parameters
 classifier = Classifier("model/keras_model.h5", "model/labels.txt")
 detector = HandDetector(maxHands=1)
 labels = ["A", "C"]
 imgSize = 400
 offset = 30
-FRAME_WINDOW = st.image([])
 
+# Sidebar settings
 with st.sidebar:
     st.header("Settings")
-    st.write("Adjust the settings below to customize the hand sign detection.")
-    run = st.checkbox("Start Webcam")
-    
-# Start video capture
-cap = cv2.VideoCapture(0)
+    st.write("Webcam is enabled in your browser.")
+    enable = st.checkbox("Start Detection", value=True)
 
-while run:
-    success, img = cap.read()
-    if not success:
-        st.error("Could not access webcam.")
-        break
+# Custom video transformer
+class VideoTransformer(VideoTransformerBase):
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        imgOutput = img.copy()
+        hands, _ = detector.findHands(img)
 
-    imgOutput = img.copy()
-    hands, img = detector.findHands(img)
+        if hands:
+            hand = hands[0]
+            x, y, w, h = hand['bbox']
+            imgWhite = np.ones((imgSize, imgSize, 3), np.uint8) * 255
+            imgCrop = img[y - offset:y + h + offset, x - offset:x + w + offset]
+            aspect_ratio = h / w
 
-    if hands:
-        hand = hands[0]
-        x, y, w, h = hand['bbox']
+            try:
+                if aspect_ratio > 1:
+                    k = imgSize / h
+                    wCal = math.ceil(k * w)
+                    imgResize = cv2.resize(imgCrop, (wCal, imgSize))
+                    wGap = math.ceil((imgSize - wCal) / 2)
+                    imgWhite[:, wGap:wGap + wCal] = imgResize
+                else:
+                    k = imgSize / w
+                    hCal = math.ceil(k * h)
+                    imgResize = cv2.resize(imgCrop, (imgSize, hCal))
+                    hGap = math.ceil((imgSize - hCal) / 2)
+                    imgWhite[hGap:hGap + hCal, :] = imgResize
 
-        imgWhite = np.ones((imgSize, imgSize, 3), np.uint8) * 255
-        imgCrop = img[y - offset:y + h + offset, x - offset:x + w + offset]
+                prediction, index = classifier.getPrediction(imgWhite)
+                label = labels[index]
 
-        aspect_ratio = h / w
+                cv2.putText(imgOutput, label, (x, y - 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                cv2.rectangle(imgOutput, (x - offset, y - offset),
+                              (x + w + offset, y + h + offset), (0, 255, 0), 2)
 
-        if aspect_ratio > 1:
-            k = imgSize / h
-            wCal = math.ceil(k * w)
-            imgResize = cv2.resize(imgCrop, (wCal, imgSize))
-            wGap = math.ceil((imgSize - wCal) / 2)
-            imgWhite[:, wGap:wGap + wCal] = imgResize
-        else:
-            k = imgSize / w
-            hCal = math.ceil(k * h)
-            imgResize = cv2.resize(imgCrop, (imgSize, hCal))
-            hGap = math.ceil((imgSize - hCal) / 2)
-            imgWhite[hGap:hGap + hCal, :] = imgResize
+            except Exception as e:
+                print("Error:", e)
 
-        prediction, index = classifier.getPrediction(imgWhite)
-        label = labels[index]
+        return imgOutput
 
-        cv2.putText(imgOutput, label, (x, y - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
-        cv2.rectangle(imgOutput, (x - offset, y - offset),
-                      (x + w + offset, y + h + offset), (0, 255, 0), 2)
-
-    FRAME_WINDOW.image(cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB))
-
-if not run:
-    cap.release()
+# Start the webcam stream
+if enable:
+    webrtc_streamer(
+        key="sign-detection",
+        video_transformer_factory=VideoTransformer,
+        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+    )

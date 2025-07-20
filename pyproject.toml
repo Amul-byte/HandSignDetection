@@ -10,5 +10,6 @@ dependencies = [
     "numpy>=1.26.0,<2.0.0",
     "opencv-python>=4.11.0.86",
     "streamlit>=1.47.0",
+    "streamlit-webrtc>=0.63.3",
     "tensorflow>=2.14.0",
 ]

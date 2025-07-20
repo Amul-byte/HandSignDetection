@@ -5,3 +5,4 @@ keras==2.15.0
 cvzone
 numpy
 mediapipe
+streamlit-webrtc
