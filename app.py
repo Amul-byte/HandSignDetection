@@ -9,7 +9,13 @@ from cvzone.ClassificationModule import Classifier
 st.title("✋ Real-time Hand Sign Detection (WebRTC)")
 
 # Load model and set parameters
-classifier = Classifier("model/keras_model.h5", "model/labels.txt")
+# classifier = Classifier("model/keras_model.h5", "model/labels.txt")
+@st.cache_resource
+def load_model():
+    return Classifier("model/keras_model.h5", "model/labels.txt")
+
+classifier = load_model()
+
 detector = HandDetector(maxHands=1)
 labels = ["A", "C"]
 imgSize = 400
