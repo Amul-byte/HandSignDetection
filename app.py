@@ -1,21 +1,21 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
+import av
 import cv2
 import numpy as np
 import math
 from cvzone.HandTrackingModule import HandDetector
 from cvzone.ClassificationModule import Classifier
 
+st.set_page_config(page_title="Hand Sign Detection")
 st.title("✋ Real-time Hand Sign Detection (WebRTC)")
 
 # Load model and set parameters
-# classifier = Classifier("model/keras_model.h5", "model/labels.txt")
 @st.cache_resource
 def load_model():
     return Classifier("model/keras_model.h5", "model/labels.txt")
 
 classifier = load_model()
-
 detector = HandDetector(maxHands=1)
 labels = ["A", "C"]
 imgSize = 400
@@ -27,9 +27,9 @@ with st.sidebar:
     st.write("Webcam is enabled in your browser.")
     enable = st.checkbox("Start Detection", value=True)
 
-# Custom video transformer
-class VideoTransformer(VideoTransformerBase):
-    def transform(self, frame):
+# Video processor (new API)
+class VideoProcessor(VideoProcessorBase):
+    def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
         imgOutput = img.copy()
         hands, _ = detector.findHands(img)
@@ -66,12 +66,17 @@ class VideoTransformer(VideoTransformerBase):
             except Exception as e:
                 print("Error:", e)
 
-        return imgOutput
+        return av.VideoFrame.from_ndarray(imgOutput, format="bgr24")
 
 # Start the webcam stream
 if enable:
-    webrtc_streamer(
+    ctx = webrtc_streamer(
         key="sign-detection",
-        video_transformer_factory=VideoTransformer,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+        video_processor_factory=VideoProcessor,
+        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True,
     )
+
+    if not ctx.state.playing:
+        st.warning("Click 'Start' above to activate your camera.")
