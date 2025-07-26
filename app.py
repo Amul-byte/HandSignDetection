@@ -30,8 +30,13 @@ with st.sidebar:
 # Video processor (new API)
 class VideoProcessor(VideoProcessorBase):
     def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        imgOutput = img.copy()
+        try:
+            img = frame.to_ndarray(format="bgr24")
+            imgOutput = img.copy()
+        except Exception as e:
+            print("⚠️ Frame decode error:", e)
+            return av.VideoFrame.from_ndarray(np.zeros((480, 640, 3), dtype=np.uint8), format="bgr24")
+
         hands, _ = detector.findHands(img)
 
         if hands:
@@ -64,7 +69,7 @@ class VideoProcessor(VideoProcessorBase):
                               (x + w + offset, y + h + offset), (0, 255, 0), 2)
 
             except Exception as e:
-                print("Error:", e)
+                print("⚠️ Prediction error:", e)
 
         return av.VideoFrame.from_ndarray(imgOutput, format="bgr24")
 
