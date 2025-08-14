@@ -8,14 +8,19 @@ import os
 import tensorflow as tf
 # Set up webcam
 cap = cv2.VideoCapture(0)
-classifier = Classifier("Model/keras_model.h5", "Model/labels.txt")
+classifier = Classifier("/Users/amulpoudel/Downloads/converted_keras (1)/keras_model.h5", "/Users/amulpoudel/Downloads/converted_keras (1)/labels.txt")
 # Initialize hand detector
 detector = HandDetector(maxHands=1)
 imgSize=400
 offset=30
 counter = 0
-labels= ["A","C"]
-folder = "Data/C"
+labels = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+    "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+    "U", "V", "W", "X", "Y", "Z"
+]
+
+folder = "Data/Z"
 os.makedirs(folder, exist_ok=True)
 
 
