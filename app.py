@@ -1,87 +1,86 @@
-import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
-import av
 import cv2
-import numpy as np
-import math
+import streamlit as st
 from cvzone.HandTrackingModule import HandDetector
 from cvzone.ClassificationModule import Classifier
+import numpy as np
+import math
+import time
+import os
 
-st.set_page_config(page_title="Hand Sign Detection")
-st.title("✋ Real-time Hand Sign Detection (WebRTC)")
+st.set_page_config(page_title="Hand Sign Detection", layout="wide")
+st.title("🤟 Hand Sign Detection App")
 
-# Load model and set parameters
-@st.cache_resource
-def load_model():
-    return Classifier("model/keras_model.h5", "model/labels.txt")
-
-classifier = load_model()
+# Load model and labels
+classifier = Classifier("model/keras_model.h5", "model/labels.txt")
 detector = HandDetector(maxHands=1)
-labels = ["A", "C"]
+labels = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+    "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+    "U", "V", "X", "Y", "Z", "W"
+]
+
 imgSize = 400
 offset = 30
+folder = "Data/Z"
+os.makedirs(folder, exist_ok=True)
+counter = 0
 
-# Sidebar settings
-with st.sidebar:
-    st.header("Settings")
-    st.write("Webcam is enabled in your browser.")
-    enable = st.checkbox("Start Detection", value=True)
+run = st.checkbox('Start Webcam')
+save_img = st.checkbox('Save Captured Image')
 
-# Video processor (new API)
-class VideoProcessor(VideoProcessorBase):
-    def recv(self, frame):
-        try:
-            img = frame.to_ndarray(format="bgr24")
-            imgOutput = img.copy()
-        except Exception as e:
-            print("⚠️ Frame decode error:", e)
-            return av.VideoFrame.from_ndarray(np.zeros((480, 640, 3), dtype=np.uint8), format="bgr24")
+frame_placeholder = st.empty()
+crop_placeholder = st.empty()
+white_placeholder = st.empty()
 
-        hands, _ = detector.findHands(img)
+if run:
+    cap = cv2.VideoCapture(0)
+
+    while cap.isOpened():
+        success, img = cap.read()
+        if not success:
+            st.warning("Could not access camera.")
+            break
+
+        imgOutput = img.copy()
+        hands, img = detector.findHands(img)
 
         if hands:
             hand = hands[0]
             x, y, w, h = hand['bbox']
             imgWhite = np.ones((imgSize, imgSize, 3), np.uint8) * 255
             imgCrop = img[y - offset:y + h + offset, x - offset:x + w + offset]
+
             aspect_ratio = h / w
+            if aspect_ratio > 1:
+                k = imgSize / h
+                wCal = math.ceil(k * w)
+                imgResize = cv2.resize(imgCrop, (wCal, imgSize))
+                wGap = math.ceil((imgSize - wCal) / 2)
+                imgWhite[:, wGap:wGap + wCal] = imgResize
+            else:
+                k = imgSize / w
+                hCal = math.ceil(k * h)
+                imgResize = cv2.resize(imgCrop, (imgSize, hCal))
+                hGap = math.ceil((imgSize - hCal) / 2)
+                imgWhite[hGap:hGap + hCal, :] = imgResize
 
-            try:
-                if aspect_ratio > 1:
-                    k = imgSize / h
-                    wCal = math.ceil(k * w)
-                    imgResize = cv2.resize(imgCrop, (wCal, imgSize))
-                    wGap = math.ceil((imgSize - wCal) / 2)
-                    imgWhite[:, wGap:wGap + wCal] = imgResize
-                else:
-                    k = imgSize / w
-                    hCal = math.ceil(k * h)
-                    imgResize = cv2.resize(imgCrop, (imgSize, hCal))
-                    hGap = math.ceil((imgSize - hCal) / 2)
-                    imgWhite[hGap:hGap + hCal, :] = imgResize
+            prediction, index = classifier.getPrediction(imgWhite)
+            label = labels[index]
+            cv2.putText(imgOutput, label, (x, y - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+            cv2.rectangle(imgOutput, (x - offset, y - offset), (x + w + offset, y + h + offset), (0, 255, 0), 2)
 
-                prediction, index = classifier.getPrediction(imgWhite)
-                label = labels[index]
+            if save_img:
+                counter += 1
+                filename = f"{folder}/Image_{int(time.time())}.jpg"
+                cv2.imwrite(filename, imgWhite)
+                st.success(f"Saved {filename}")
 
-                cv2.putText(imgOutput, label, (x, y - 20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
-                cv2.rectangle(imgOutput, (x - offset, y - offset),
-                              (x + w + offset, y + h + offset), (0, 255, 0), 2)
+            # Display the image crops
+            crop_placeholder.image(cv2.cvtColor(imgCrop, cv2.COLOR_BGR2RGB), caption="Cropped Image", use_container_width =True)
+            white_placeholder.image(cv2.cvtColor(imgWhite, cv2.COLOR_BGR2RGB), caption="Resized to 400x400", use_container_width =True)
 
-            except Exception as e:
-                print("⚠️ Prediction error:", e)
+        frame_placeholder.image(cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB), caption="Live Webcam Feed", channels="RGB")
 
-        return av.VideoFrame.from_ndarray(imgOutput, format="bgr24")
-
-# Start the webcam stream
-if enable:
-    ctx = webrtc_streamer(
-        key="sign-detection",
-        video_processor_factory=VideoProcessor,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={"video": True, "audio": False},
-        async_processing=True,
-    )
-
-    if not ctx.state.playing:
-        st.warning("Click 'Start' above to activate your camera.")
+    cap.release()
+else:
+    st.info("✅ Click the checkbox above to start the webcam.")
