@@ -8,7 +8,7 @@ import os
 import tensorflow as tf
 # Set up webcam
 cap = cv2.VideoCapture(0)
-classifier = Classifier("/Users/amulpoudel/Downloads/converted_keras (1)/keras_model.h5", "/Users/amulpoudel/Downloads/converted_keras (1)/labels.txt")
+classifier = Classifier("/Users/amulpoudel/Developer/HandSignDetection/model/keras_model.h5", "/Users/amulpoudel/Developer/HandSignDetection/model/labels.txt")
 # Initialize hand detector
 detector = HandDetector(maxHands=1)
 imgSize=400
