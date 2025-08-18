@@ -1,18 +1,18 @@
-# app.py
+
 import os, io, math, time
 import numpy as np
 import cv2
 import streamlit as st
 
-# Reduce noisy logs (place before importing TF if you use it elsewhere)
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ["OPENCV_LOG_LEVEL"] = "SILENT"
 
-# --- Third-party for webcam-in-browser ---
+
 import av
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
-# --- Your existing modules ---
+
 from cvzone.HandTrackingModule import HandDetector
 from cvzone.ClassificationModule import Classifier
 from PIL import Image
@@ -20,9 +20,6 @@ from PIL import Image
 st.set_page_config(page_title="🤟 Hand Sign Detection", layout="wide")
 st.title("🤟 Hand Sign Detection App")
 
-# =========================
-# Models & constants
-# =========================
 @st.cache_resource
 def load_detector_and_classifier():
     # Load once per process (cached across Streamlit reruns)
@@ -38,9 +35,8 @@ LABELS = [
     "U","V","X","Y","Z","W"
 ]
 
-# =========================
+
 # Sidebar controls
-# =========================
 with st.sidebar:
     st.header("Settings")
     OFFSET = st.slider("Crop offset (px)", 0, 60, 30, 2)
@@ -128,9 +124,9 @@ def process_frame(bgr_img, offset, img_size):
     else:
         return img, None, None, None
 
-# =========================
+
 # LIVE: Browser camera (WebRTC)
-# =========================
+
 if mode == "Live (browser camera — recommended)":
     col1, col2 = st.columns(2, vertical_alignment="center")
     snap_btn = col1.button("📸 Save normalized image", disabled=not enable_snapshots)

@@ -1,8 +1,10 @@
 streamlit
 opencv-python-headless
 tensorflow==2.15.0
-keras==2.15.0 
+keras==2.15.0
 cvzone
-numpy
+numpy==1.26.4
 mediapipe
 streamlit-webrtc
+Pillow
+av
